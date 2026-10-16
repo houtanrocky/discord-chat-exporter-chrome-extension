@@ -1,0 +1,59 @@
+body {
+  width: 320px;
+  padding: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #2f3136;
+  color: #dcddde;
+}
+#app {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+h2 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #fff;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+}
+.field.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+label {
+  font-size: 13px;
+  margin-bottom: 2px;
+  color: #b9bbbe;
+}
+select, input[type="date"], input[type="password"] {
+  padding: 6px 8px;
+  background: #40444b;
+  border: 1px solid #202225;
+  color: #dcddde;
+  border-radius: 4px;
+}
+input[type="checkbox"] {
+  margin: 0;
+}
+button {
+  padding: 8px 12px;
+  background: #5865f2;
+  border: none;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+#status {
+  margin-top: 8px;
+  font-size: 14px;
+  min-height: 20px;
+}

@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Discord Chat Exporter",
+  "version": "1.3.0",
+  "description": "Export Discord chat text for analysis with progress tracking.",
+  "permissions": ["storage", "downloads", "activeTab"],
+  "host_permissions": ["*://discord.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://discord.com/channels/*", "*://discord.com/channels/@me/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["export.html", "export.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

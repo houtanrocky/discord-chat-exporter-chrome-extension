@@ -1,4 +1,4 @@
-function markdownToPlainText(text) {
+export function markdownToPlainText(text) {
   if (!text) return '';
 
   let result = text;

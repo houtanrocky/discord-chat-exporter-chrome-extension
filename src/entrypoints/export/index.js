@@ -1,4 +1,6 @@
-// export.js – runs in the export tab
+﻿import { browser } from 'wxt/browser';
+
+// export.js - runs in the export tab
 document.addEventListener('DOMContentLoaded', async () => {
   // Parse URL parameters
   const params = new URLSearchParams(window.location.search);
@@ -42,12 +44,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   // State
   let exportId = null;
   let completed = false;
+  const currentTab = await browser.tabs.getCurrent();
+  const currentTabId = currentTab?.id;
 
   // Start the export
   async function startExport() {
     try {
-      const response = await chrome.runtime.sendMessage({
+      const response = await browser.runtime.sendMessage({
         action: 'startExportInTab',
+        tabId: currentTabId,
         guildId,
         channelId,
         format,
@@ -59,7 +64,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!response.success) {
         throw new Error(response.error || 'Failed to start export');
       }
-      // Export started – we'll receive progress messages
+      // Export started - we'll receive progress messages
     } catch (error) {
       statusText.textContent = 'Error: ' + error.message;
       statusText.className = 'status-text error';
@@ -69,11 +74,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Handle progress messages from background
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === 'exportProgress') {
+  browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'exportProgress' && message.tabId === currentTabId) {
       const { percent, status, detail, complete, cancelled, error } = message;
       progressFill.style.width = Math.min(percent || 0, 100) + '%';
-      statusText.textContent = status || 'Processing…';
+      statusText.textContent = status || 'Processing...';
       if (detail) detailText.textContent = detail;
       if (complete) {
         completed = true;
@@ -106,8 +111,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Cancel
   cancelBtn.addEventListener('click', async () => {
     cancelBtn.disabled = true;
-    statusText.textContent = 'Cancelling…';
-    const response = await chrome.runtime.sendMessage({ action: 'cancelExport' });
+    statusText.textContent = 'Cancelling...';
+    const response = await browser.runtime.sendMessage({ action: 'cancelExport' });
     if (!response.success) {
       statusText.textContent = 'Failed to cancel: ' + (response.error || 'unknown');
       cancelBtn.disabled = false;
@@ -121,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     cancelBtn.classList.remove('hidden');
     cancelBtn.disabled = false;
     progressFill.style.width = '0%';
-    statusText.textContent = 'Starting…';
+    statusText.textContent = 'Starting...';
     statusText.className = 'status-text';
     detailText.textContent = '';
     startExport();
@@ -135,3 +140,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Start
   await startExport();
 });
+
+
+

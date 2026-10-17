@@ -1,4 +1,4 @@
-class User {
+export class User {
   constructor(data) {
     this.id = data.id;
     this.username = data.username;
@@ -12,7 +12,7 @@ class User {
   }
 }
 
-class Message {
+export class Message {
   constructor(data) {
     this.id = data.id;
     this.type = data.type;
@@ -42,7 +42,7 @@ class Message {
 }
 
 // ---------- Export Builders ----------
-function buildJson(messages, channel, guild) {
+export function buildJson(messages, channel, guild) {
   const data = {
     guild: guild ? { id: guild.id, name: guild.name } : null,
     channel: { id: channel.id, name: channel.name, type: channel.type },
@@ -69,7 +69,7 @@ function buildJson(messages, channel, guild) {
   return JSON.stringify(data, null, 2);
 }
 
-function buildCsv(messages) {
+export function buildCsv(messages) {
   const headers = ['MessageID', 'AuthorID', 'AuthorName', 'Timestamp', 'Content', 'AttachmentURLs', 'Reactions'];
   let rows = [headers.join(',')];
   for (const m of messages) {
@@ -88,13 +88,13 @@ function buildCsv(messages) {
   }
   return rows.join('\n');
 }
-function escapeCsv(str) {
+export function escapeCsv(str) {
   if (str == null) return '';
   const s = String(str).replace(/"/g, '""');
   return `"${s}"`;
 }
 
-function buildPlainText(messages) {
+export function buildPlainText(messages) {
   let text = '';
   for (const m of messages) {
     const date = m.timestamp.toLocaleString();

@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Exporting… – Discord Chat Exporter</title>
+  <title>Exporting - Discord Chat Exporter</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -154,7 +154,7 @@
 <body>
 <div class="container" id="app">
   <h1>
-    <img src='./icons/icon32.png'></img>
+    <img src='./icons/icon32.png' alt="" />
     Export in progress
   </h1>
   <div class="subtitle">Your chat data is being exported. You can close this tab and the export will continue in the background.</div>
@@ -172,7 +172,7 @@
   <div class="progress-bar-bg">
     <div class="progress-bar-fill" id="progressFill"></div>
   </div>
-  <div class="status-text" id="statusText">Initializing…</div>
+  <div class="status-text" id="statusText">Initializing...</div>
   <div class="detail-text" id="detailText"></div>
 
   <!-- Actions -->
@@ -182,8 +182,11 @@
     <button class="btn btn-primary hidden" id="retryBtn">Retry</button>
   </div>
 
-  <div class="footer">Discord Chat Exporter v1.2.5</div>
+  <div class="footer">Discord Chat Exporter v1.4.0</div>
 </div>
-<script src="export.js"></script>
+<script type="module" src="./index.js"></script>
 </body>
 </html>
+
+
+

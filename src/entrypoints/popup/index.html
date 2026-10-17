@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="./style.css" />
+    <title>Discord Chat Exporter</title>
+  </head>
+  <body>
+    <main id="app">
+      <header class="app-header">
+        <div class="brand-mark" aria-hidden="true">D</div>
+        <div>
+          <p class="eyebrow">Discord Chat Exporter</p>
+          <h1>Save a conversation</h1>
+        </div>
+        <span class="privacy-badge">Local only</span>
+      </header>
+
+      <div id="notDiscordWarning" class="alert alert-warning" role="alert" hidden>
+        <span class="alert-icon" aria-hidden="true">!</span>
+        <p>Open a Discord channel in the active tab to choose a conversation.</p>
+      </div>
+
+      <section class="preview-card" id="previewCard" aria-label="Current selection">
+        <div class="preview-avatar" id="previewAvatar" aria-hidden="true">?</div>
+        <div class="preview-info">
+          <span class="preview-kicker">Ready to export</span>
+          <strong class="preview-guild" id="previewGuildName">Select a server</strong>
+          <span class="preview-channel" id="previewChannelName">Select a channel</span>
+        </div>
+      </section>
+
+      <form id="exportForm" class="export-form">
+        <section class="form-section">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Connection</p>
+              <h2>Choose where to export from</h2>
+            </div>
+            <span class="step-badge">1</span>
+          </div>
+
+          <div class="field">
+            <label for="modeSelect">Source</label>
+            <select id="modeSelect">
+              <option value="guild">Server channels</option>
+              <option value="dm">Direct messages</option>
+            </select>
+          </div>
+
+          <div class="field" id="guildField">
+            <label for="guildSelect">Server</label>
+            <select id="guildSelect"></select>
+          </div>
+
+          <div class="field" id="channelField">
+            <label for="channelSelect">Channel</label>
+            <select id="channelSelect"></select>
+          </div>
+
+          <div class="field token-field">
+            <div class="label-row">
+              <label for="tokenInput">Discord API token</label>
+              <button type="button" class="text-button" id="clearTokenBtn">Clear</button>
+            </div>
+            <input type="password" id="tokenInput" autocomplete="off" placeholder="Paste a token to continue" />
+            <small>Stored in this browser only; clear it when you are done. This extension never reads cookies or page storage.</small>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Export settings</p>
+              <h2>Shape the download</h2>
+            </div>
+            <span class="step-badge">2</span>
+          </div>
+
+          <div class="date-row">
+            <div class="field flex-1">
+              <label for="afterDate">From</label>
+              <input type="date" id="afterDate" />
+            </div>
+            <div class="field flex-1">
+              <label for="beforeDate">To</label>
+              <input type="date" id="beforeDate" />
+            </div>
+          </div>
+
+          <label class="check-row">
+            <input type="checkbox" id="allTime" />
+            <span><strong>All time</strong><small>Automatically find the full history</small></span>
+          </label>
+          <label class="check-row">
+            <input type="checkbox" id="allChannels" />
+            <span><strong>Every channel</strong><small>Export all text channels in this source</small></span>
+          </label>
+
+          <div class="field">
+            <label for="formatSelect">File format</label>
+            <select id="formatSelect">
+              <option value="json">JSON — best for analysis</option>
+              <option value="csv">CSV — spreadsheets</option>
+              <option value="plaintext">Plain text — easy to read</option>
+            </select>
+          </div>
+        </section>
+
+        <button type="submit" class="export-btn" id="exportBtn">
+          <span>Start export</span><span aria-hidden="true">→</span>
+        </button>
+      </form>
+
+      <section id="progressArea" class="progress-area" hidden aria-live="polite">
+        <div class="progress-heading"><strong id="progressStatus">Preparing export</strong><span id="progressPercent">0%</span></div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+        <p class="progress-detail" id="progressDetail">Your export will download in a new tab.</p>
+        <button type="button" id="cancelBtn" class="cancel-btn" hidden>Cancel export</button>
+      </section>
+
+      <div id="status" class="status-message" role="status" aria-live="polite"></div>
+      <footer>Discord Chat Exporter <span>v1.4.0</span></footer>
+    </main>
+    <script type="module" src="./index.js"></script>
+  </body>
+</html>

@@ -1,4 +1,8 @@
+﻿import { browser } from 'wxt/browser';
+
 document.addEventListener('DOMContentLoaded', async () => {
+  const stateStorage = browser.storage.session || browser.storage.local;
+  const stateStorageNamespace = browser.storage.session ? 'session' : 'local';
   // DOM elements
   const modeSelect = document.getElementById('modeSelect');
   const guildSelect = document.getElementById('guildSelect');
@@ -11,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const allChannelsCheck = document.getElementById('allChannels');
   const allTimeCheck = document.getElementById('allTime');
   const tokenInput = document.getElementById('tokenInput');
+  const clearTokenBtn = document.getElementById('clearTokenBtn');
   const notDiscordWarning = document.getElementById('notDiscordWarning');
   const previewGuild = document.getElementById('previewGuildName');
   const previewChannel = document.getElementById('previewChannelName');
@@ -18,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const progressFill = document.getElementById('progressFill');
   const progressStatus = document.getElementById('progressStatus');
   const progressDetail = document.getElementById('progressDetail');
+  const progressPercent = document.getElementById('progressPercent');
   const cancelBtn = document.getElementById('cancelBtn');
   const guildField = document.getElementById('guildField');
 
@@ -46,11 +52,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     container.style.fontWeight = '600';
     container.style.color = '#ffffff';
 
-    const isChannelSelected = channelName && !['Select a channel','Loading channels…','All text channels','All DMs'].includes(channelName);
+    const isChannelSelected = channelName && !['Select a channel','Loading channels...','All text channels','All DMs'].includes(channelName);
     const isAllChannels = channelName === 'All text channels' || channelName === 'All DMs';
 
     if (isAllChannels) {
-      container.textContent = '📁';
+      container.textContent = 'ALL';
       container.style.fontSize = '24px';
       container.style.background = '#8e8e93';
       return;
@@ -94,12 +100,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // --- Token ---
-  chrome.storage.sync.get(['discordToken'], (r) => {
-    if (r.discordToken) tokenInput.value = r.discordToken;
-  });
+  const storedToken = await stateStorage.get(['discordToken']);
+  if (storedToken.discordToken) tokenInput.value = storedToken.discordToken;
   tokenInput.addEventListener('input', () => {
     const t = tokenInput.value.trim();
-    if (t) chrome.storage.sync.set({ discordToken: t });
+    if (t) stateStorage.set({ discordToken: t });
+    else stateStorage.remove('discordToken');
+  });
+  clearTokenBtn.addEventListener('click', async () => {
+    tokenInput.value = '';
+    await stateStorage.remove('discordToken');
+    statusDiv.textContent = 'Token cleared from this browser session.';
+    statusDiv.className = 'status-message success';
   });
 
   // --- All Time ---
@@ -112,13 +124,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- Check export status ---
   async function checkExportStatus() {
-    const resp = await chrome.runtime.sendMessage({ action: 'getExportStatus' });
+    const resp = await browser.runtime.sendMessage({ action: 'getExportStatus' });
     if (resp && resp.inProgress) {
-      progressArea.style.display = 'block';
+      progressArea.hidden = false;
       progressFill.style.width = '0%';
-      progressStatus.textContent = 'Export already in progress…';
+      progressPercent.textContent = '0%';
+      progressStatus.textContent = 'Export already in progress...';
       progressDetail.textContent = 'Check the export tab.';
-      cancelBtn.style.display = 'inline-block';
+      cancelBtn.hidden = false;
       exportBtn.disabled = true;
     }
   }
@@ -126,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Load Guilds ---
   async function loadGuilds() {
     try {
-      const resp = await chrome.runtime.sendMessage({ action: 'getGuilds' });
+      const resp = await browser.runtime.sendMessage({ action: 'getGuilds' });
       if (!resp) throw new Error('No response from background script.');
       if (!resp.success) throw new Error(resp.error || 'Failed to load guilds.');
       guildsData = resp.data;
@@ -140,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         guildSelect.appendChild(opt);
       });
       // Auto-select stored guild (if not DM)
-      const session = await chrome.storage.session.get(['currentGuildId', 'currentChannelId']);
+      const session = await stateStorage.get(['currentGuildId', 'currentChannelId']);
       if (session.currentGuildId && session.currentGuildId !== '@me') {
         guildSelect.value = session.currentGuildId;
         guildSelect.dispatchEvent(new Event('change'));
@@ -155,7 +168,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function loadDMs() {
     try {
       console.log('Loading DMs...');
-      const resp = await chrome.runtime.sendMessage({ action: 'getDMs' });
+      const resp = await browser.runtime.sendMessage({ action: 'getDMs' });
       console.log('DM response:', resp);
       if (!resp) throw new Error('No response from background script for DMs.');
       if (!resp.success) throw new Error(resp.error || 'Failed to load DMs.');
@@ -174,7 +187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       
       // Auto-select stored channel
-      const session = await chrome.storage.session.get(['currentChannelId']);
+      const session = await stateStorage.get(['currentChannelId']);
       if (session.currentChannelId && channelSelect.querySelector(`option[value="${session.currentChannelId}"]`)) {
         channelSelect.value = session.currentChannelId;
         channelSelect.dispatchEvent(new Event('change'));
@@ -215,7 +228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // --- Detect current tab and switch mode automatically ---
   async function detectAndSwitchMode() {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     if (!tab || !tab.url) {
       showWarning(true);
       return;
@@ -233,7 +246,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       switchToDMMode();
       // After DMs load, auto-select the current DM
       setTimeout(() => {
-        const session = chrome.storage.session.get(['currentChannelId'], (result) => {
+        stateStorage.get(['currentChannelId']).then((result) => {
           if (result.currentChannelId && channelSelect.querySelector(`option[value="${result.currentChannelId}"]`)) {
             channelSelect.value = result.currentChannelId;
             channelSelect.dispatchEvent(new Event('change'));
@@ -261,10 +274,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       updatePreview('', '', '', '', '');
       return;
     }
-    updatePreview(guildName, 'Loading channels…', guildIdAttr, '', iconUrl);
+    updatePreview(guildName, 'Loading channels...', guildIdAttr, '', iconUrl);
 
     try {
-      const resp = await chrome.runtime.sendMessage({ action: 'getChannels', guildId });
+      const resp = await browser.runtime.sendMessage({ action: 'getChannels', guildId });
       if (!resp) throw new Error('No response from background script.');
       if (!resp.success) throw new Error(resp.error || 'Failed to load channels.');
       const channels = resp.data;
@@ -278,7 +291,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       channelSelect.disabled = allChannelsCheck.checked;
       // Auto-select stored channel
-      const session = await chrome.storage.session.get(['currentChannelId']);
+      const session = await stateStorage.get(['currentChannelId']);
       if (session.currentChannelId && channelSelect.querySelector(`option[value="${session.currentChannelId}"]`)) {
         channelSelect.value = session.currentChannelId;
         channelSelect.dispatchEvent(new Event('change'));
@@ -330,8 +343,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // --- Storage changes for auto-update ---
-  chrome.storage.onChanged.addListener((changes, namespace) => {
-    if (namespace === 'session' && changes.currentGuildId && changes.currentChannelId) {
+  browser.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === stateStorageNamespace && changes.currentGuildId && changes.currentChannelId) {
       const newGuild = changes.currentGuildId.newValue;
       const newChannel = changes.currentChannelId.newValue;
       if (newGuild === '@me') {
@@ -366,7 +379,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Not Discord warning ---
   function showWarning(show) {
     if (show) {
-      notDiscordWarning.style.display = 'flex';
+      notDiscordWarning.hidden = false;
       document.querySelectorAll('#exportForm input, #exportForm select, #exportForm button')
         .forEach(el => { if (el.id !== 'tokenInput') el.disabled = true; });
       exportBtn.disabled = true;
@@ -374,7 +387,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       channelSelect.innerHTML = '<option value="">Select channel</option>';
       updatePreview('Not on Discord', 'Please open a Discord page', '', '', '');
     } else {
-      notDiscordWarning.style.display = 'none';
+      notDiscordWarning.hidden = true;
       document.querySelectorAll('#exportForm input, #exportForm select, #exportForm button')
         .forEach(el => { if (el.id !== 'tokenInput') el.disabled = false; });
       exportBtn.disabled = false;
@@ -432,8 +445,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       iconUrl: iconUrl || ''
     });
 
-    const url = chrome.runtime.getURL('export.html') + '?' + params.toString();
-    chrome.tabs.create({ url });
+    const url = browser.runtime.getURL('export.html') + '?' + params.toString();
+    await browser.tabs.create({ url });
     window.close();
   });
 
@@ -441,3 +454,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   await detectAndSwitchMode();
   await checkExportStatus();
 });
+
+

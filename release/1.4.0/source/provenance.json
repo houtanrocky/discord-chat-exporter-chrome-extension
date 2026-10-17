@@ -1,6 +1,6 @@
 {
   "version": "1.4.0",
-  "capturedAt": "2026-10-17T23:46:54.079Z",
+  "capturedAt": "2026-10-17T23:56:07.100Z",
   "browserVersion": "145.0.7632.6",
   "interface": "Actual .output/chrome-mv3 production pages loaded as a native Chromium extension",
   "data": "Deterministic synthetic API fixture from test/fixtures.mjs. No live account, credentials, or private messages.",
@@ -10,12 +10,12 @@
     {
       "path": "release/1.4.0/source/popup-server.png",
       "source": "chrome-extension://<unpacked-extension-id>/popup.html",
-      "sha256": "3c2f669312300e5538ee9416bfeacf54beea1befe0ec1f395eaa8513de1722c1"
+      "sha256": "27f9d76c7473c3d8b995713754c82c9be7b1e12ab0f955ecc96545ecc97aa7fa"
     },
     {
       "path": "release/1.4.0/source/popup-formats-dates.png",
       "source": "chrome-extension://<unpacked-extension-id>/popup.html",
-      "sha256": "6f999db9145c5a18be6ebede597746a0198d7930aae46e2c74a05d758e72aaaa"
+      "sha256": "0d148d162ef085504cee62d72f1335bc3121fbaefc2622c7ec1c0a4f49c252c1"
     },
     {
       "path": "release/1.4.0/screenshots/03-live-progress.png",
@@ -30,22 +30,22 @@
     {
       "path": "release/1.4.0/source/popup-direct-messages.png",
       "source": "chrome-extension://<unpacked-extension-id>/popup.html",
-      "sha256": "8ef24c1dbfcd9731cd3a183c9e4fafbd1016904bb89e5ac0e89d5dc32d27abbf"
+      "sha256": "de1f6775da16e9c6ebdcbc717d95f362ecbf0fdbc557a8390b43824055bc9a3c"
     },
     {
       "path": "release/1.4.0/screenshots/01-choose-conversation.png",
       "source": "about:blank",
-      "sha256": "3587747f0c363fa0545bcffbf7f2d76e0e919c1f6f4648c58f9ea657f2bffc9c"
+      "sha256": "220d9dedf16baa8ac911e1434907861aaba687f8743ac8835fbc8b46ac2aafb7"
     },
     {
       "path": "release/1.4.0/screenshots/02-formats-and-dates.png",
       "source": "about:blank",
-      "sha256": "3e7a03afa9cbd93274ebcb9ea274b527856fca19e647605d77fcd1795e640bb3"
+      "sha256": "912772d760dbb8ad8b37f9e4d7270643fe81a98ea69516780466005d38b01530"
     },
     {
       "path": "release/1.4.0/screenshots/05-direct-messages.png",
       "source": "about:blank",
-      "sha256": "38cbb83b54b90fab208c3329d4e758231e0b40ccad0cb131638b2625f933a593"
+      "sha256": "d1cb2f6cf3bd8a2feb2ad2df43cf8a3fb5c327439315646e0ab8eada3dfd08b4"
     },
     {
       "path": "release/1.4.0/promo/marquee-1400x560.png",

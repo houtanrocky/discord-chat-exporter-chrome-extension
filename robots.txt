@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://houtanrocky.github.io/discord-chat-exporter-chrome-extension/sitemap.xml

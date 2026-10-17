@@ -57,6 +57,15 @@ test('a missing token can connect immediately and can always be cleared', async 
   await expect(page.locator('#exportBtn')).toBeDisabled();
   expect(await page.evaluate(() => window.__harness.store.discordToken)).toBeUndefined();
 });
+test('token help explains the supported setup boundary without exposing credentials', async ({ page }, info) => {
+  await openPopup(page, info, { noToken: true });
+  const guide = page.locator('#tokenGuide');
+  await expect(guide.locator('summary')).toHaveText('Where do I get a token?');
+  await guide.locator('summary').click();
+  await expect(guide).toContainText('Discord does not provide a supported way');
+  await expect(guide).toContainText('cannot use this version yet');
+  await expect(guide.locator('a')).toHaveAttribute('href', /support\.html#about-the-api-token/);
+});
 test('non-Discord tabs disable exports while allowing token clearing', async ({ page }, info) => {
   await openPopup(page, info, { tabUrl: 'https://example.test/discord.com/channels/123/456' });
   await expect(page.locator('#notDiscordWarning')).toBeVisible();

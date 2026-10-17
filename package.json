@@ -10,9 +10,20 @@
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "test": "node --test test/unit/*.test.mjs",
+    "test:coverage": "node --experimental-test-coverage --test test/unit/*.test.mjs",
+    "test:e2e": "playwright test",
+    "test:all": "npm test && npm run build && npm run build:firefox && npm run test:e2e",
+    "brand": "node scripts/brand.mjs",
+    "screenshots": "node scripts/capture-release.mjs",
+    "release:verify": "node scripts/verify-release.mjs",
+    "site:dev": "node scripts/serve.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
+    "sharp": "^0.35.5",
     "wxt": "^0.21.4"
   }
 }

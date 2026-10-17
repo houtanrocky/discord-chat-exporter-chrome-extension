@@ -1,0 +1,11 @@
+VERSION 1.4.0
+
+• A redesigned popup and export workspace with a consistent visual identity.
+• An explicit Connect action, clearer source selection, and quick token clearing.
+• Accessible format selection, UTC date labels, and responsive progress views.
+• Correct bulk export of text and announcement channels.
+• Full-day end-date handling and all-time exports that include the latest messages.
+• Correct CSV escaping and safer spreadsheet cells.
+• Original message text retained in JSON; readable exports retain code content.
+• Rate-limit retries and cancellation that stops pending requests.
+• New website, setup guide, support page, and privacy policy.

@@ -3,8 +3,8 @@ export function markdownToPlainText(text) {
 
   let result = text;
 
-  // Remove code blocks (multiline)
-  result = result.replace(/```[\s\S]*?```/g, '');
+  // Keep the code itself in readable exports.
+  result = result.replace(/```(?:[\w+-]+\n)?([\s\S]*?)```/g, '$1');
 
   // Inline code
   result = result.replace(/`([^`]+)`/g, '$1');
@@ -30,7 +30,7 @@ export function markdownToPlainText(text) {
   // @everyone and @here remain.
 
   // Custom emoji: <:name:id> -> :name:
-  result = result.replace(/<a?:\w+:(\d+)>/g, ':$1:');
+  result = result.replace(/<a?:(\w+):\d+>/g, ':$1:');
 
   // Links: [text](url) -> text (url)
   result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)');

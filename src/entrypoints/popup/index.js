@@ -1,458 +1,177 @@
-﻿import { browser } from 'wxt/browser';
+import { browser } from 'wxt/browser';
+import { parseDiscordUrl, validateExport } from '../../lib/export-options.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const stateStorage = browser.storage.session || browser.storage.local;
-  const stateStorageNamespace = browser.storage.session ? 'session' : 'local';
-  // DOM elements
-  const modeSelect = document.getElementById('modeSelect');
-  const guildSelect = document.getElementById('guildSelect');
-  const channelSelect = document.getElementById('channelSelect');
-  const formatSelect = document.getElementById('formatSelect');
-  const afterDate = document.getElementById('afterDate');
-  const beforeDate = document.getElementById('beforeDate');
-  const exportBtn = document.getElementById('exportBtn');
-  const statusDiv = document.getElementById('status');
-  const allChannelsCheck = document.getElementById('allChannels');
-  const allTimeCheck = document.getElementById('allTime');
-  const tokenInput = document.getElementById('tokenInput');
-  const clearTokenBtn = document.getElementById('clearTokenBtn');
-  const notDiscordWarning = document.getElementById('notDiscordWarning');
-  const previewGuild = document.getElementById('previewGuildName');
-  const previewChannel = document.getElementById('previewChannelName');
-  const progressArea = document.getElementById('progressArea');
-  const progressFill = document.getElementById('progressFill');
-  const progressStatus = document.getElementById('progressStatus');
-  const progressDetail = document.getElementById('progressDetail');
-  const progressPercent = document.getElementById('progressPercent');
-  const cancelBtn = document.getElementById('cancelBtn');
-  const guildField = document.getElementById('guildField');
+  const storage = browser.storage.session || browser.storage.local;
+  const namespace = browser.storage.session ? 'session' : 'local';
+  const el = id => document.getElementById(id);
+  const token = el('tokenInput');
+  const mode = el('modeSelect');
+  const guild = el('guildSelect');
+  const channel = el('channelSelect');
+  const allTime = el('allTime');
+  const allChannels = el('allChannels');
+  let connected = false;
+  let onDiscord = false;
+  let busy = false;
+  let running = false;
+  let generation = 0;
+  let tokenWrite = Promise.resolve();
+  let selection = null;
 
-  // State
-  let currentMode = 'guild';
-  let guildsData = [];
-  let dmsData = [];
-
-  // --- Helpers ---
-  function getColorFromId(id, offset = 0) {
-    let hash = 0;
-    for (let i = 0; i < id.length; i++) {
-      hash = id.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = (Math.abs(hash) + offset) % 360;
-    return `hsl(${hue}, 60%, 70%)`;
+  function status(text = '', type = '') {
+    el('status').textContent = text;
+    el('status').className = `status-message ${type}`;
   }
-
-  function setAvatar(guildName, channelName, guildId, channelId, iconUrl) {
-    const container = document.getElementById('previewAvatar');
-    container.innerHTML = '';
-    container.style.display = 'flex';
-    container.style.alignItems = 'center';
-    container.style.justifyContent = 'center';
-    container.style.fontSize = '22px';
-    container.style.fontWeight = '600';
-    container.style.color = '#ffffff';
-
-    const isChannelSelected = channelName && !['Select a channel','Loading channels...','All text channels','All DMs'].includes(channelName);
-    const isAllChannels = channelName === 'All text channels' || channelName === 'All DMs';
-
-    if (isAllChannels) {
-      container.textContent = 'ALL';
-      container.style.fontSize = '24px';
-      container.style.background = '#8e8e93';
-      return;
-    }
-    if (isChannelSelected && channelId) {
-      const letter = channelName.charAt(0).toUpperCase();
-      container.textContent = letter;
-      container.style.background = getColorFromId(channelId, 120);
-      return;
-    }
-    if (guildName && guildName !== 'Select a guild' && guildName !== 'Select DM') {
-      if (iconUrl) {
-        const img = document.createElement('img');
-        img.src = iconUrl;
-        img.alt = `${guildName} icon`;
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'cover';
-        img.onerror = () => {
-          img.remove();
-          const letter = guildName.charAt(0).toUpperCase();
-          container.textContent = letter;
-          container.style.background = guildId ? getColorFromId(guildId) : '#d1d5db';
-        };
-        container.appendChild(img);
-      } else {
-        const letter = guildName.charAt(0).toUpperCase();
-        container.textContent = letter;
-        container.style.background = guildId ? getColorFromId(guildId) : '#d1d5db';
-      }
-      return;
-    }
-    container.textContent = '?';
-    container.style.background = '#d1d5db';
+  function options(select, items, placeholder) {
+    select.replaceChildren(new Option(placeholder, ''), ...items.map(item => new Option(item.name, item.id)));
   }
-
-  function updatePreview(guildName, channelName, guildId, channelId, iconUrl) {
-    previewGuild.textContent = guildName || 'Select a guild';
-    previewChannel.textContent = channelName || 'Select a channel';
-    setAvatar(guildName, channelName, guildId, channelId, iconUrl);
+  function refresh() {
+    el('guildField').hidden = mode.value === 'dm';
+    guild.disabled = !connected || busy || !onDiscord;
+    channel.disabled = !connected || busy || allChannels.checked || !onDiscord;
+    mode.disabled = busy || !onDiscord;
+    el('afterDate').disabled = allTime.checked || !onDiscord;
+    el('beforeDate').disabled = allTime.checked || !onDiscord;
+    el('dateRow').hidden = allTime.checked;
+    el('exportBtn').disabled = !connected || busy || running || !onDiscord;
+    el('connectBtn').disabled = busy || !onDiscord;
+    el('connectionStatus').textContent = busy ? 'Connecting…' : connected ? 'Connected' : 'Not connected';
+    const guildName = mode.value === 'dm' ? 'Direct messages' : guild.selectedOptions[0]?.textContent;
+    el('previewGuildName').textContent = connected ? guildName || 'Choose a server' : 'Connect to get started';
+    el('previewChannelName').textContent = allChannels.checked ? (mode.value === 'dm' ? 'All direct messages' : 'All text channels') : channel.value ? `# ${channel.selectedOptions[0].textContent}` : 'Choose the history you want to keep';
+    el('previewAvatar').textContent = mode.value === 'dm' ? '@' : '#';
   }
-
-  // --- Token ---
-  const storedToken = await stateStorage.get(['discordToken']);
-  if (storedToken.discordToken) tokenInput.value = storedToken.discordToken;
-  tokenInput.addEventListener('input', () => {
-    const t = tokenInput.value.trim();
-    if (t) stateStorage.set({ discordToken: t });
-    else stateStorage.remove('discordToken');
-  });
-  clearTokenBtn.addEventListener('click', async () => {
-    tokenInput.value = '';
-    await stateStorage.remove('discordToken');
-    statusDiv.textContent = 'Token cleared from this browser session.';
-    statusDiv.className = 'status-message success';
-  });
-
-  // --- All Time ---
-  allTimeCheck.addEventListener('change', () => {
-    const checked = allTimeCheck.checked;
-    afterDate.disabled = checked;
-    beforeDate.disabled = checked;
-    if (checked) { afterDate.value = ''; beforeDate.value = ''; }
-  });
-
-  // --- Check export status ---
-  async function checkExportStatus() {
-    const resp = await browser.runtime.sendMessage({ action: 'getExportStatus' });
-    if (resp && resp.inProgress) {
-      progressArea.hidden = false;
-      progressFill.style.width = '0%';
-      progressPercent.textContent = '0%';
-      progressStatus.textContent = 'Export already in progress...';
-      progressDetail.textContent = 'Check the export tab.';
-      cancelBtn.hidden = false;
-      exportBtn.disabled = true;
-    }
+  async function request(action, extra = {}) {
+    const result = await browser.runtime.sendMessage({ action, ...extra });
+    if (!result?.success) throw new Error(result?.error || 'The extension did not respond. Reopen the popup and retry.');
+    return result.data;
   }
-
-  // --- Load Guilds ---
-  async function loadGuilds() {
+  async function loadChannels(expected = generation) {
+    options(channel, [], 'Choose a channel');
+    if (!guild.value) return;
+    const guildId = guild.value;
+    const data = await request('getChannels', { guildId });
+    if (expected !== generation || guild.value !== guildId || mode.value !== 'guild') return;
+    options(channel, data, data.length ? 'Choose a channel' : 'No text channels found');
+    if (selection?.guildId === guildId && data.some(c => c.id === selection.channelId)) channel.value = selection.channelId;
+  }
+  async function loadSource() {
+    const expected = ++generation;
+    busy = true;
+    status();
+    options(guild, [], 'Choose a server');
+    options(channel, [], 'Choose a conversation');
+    refresh();
     try {
-      const resp = await browser.runtime.sendMessage({ action: 'getGuilds' });
-      if (!resp) throw new Error('No response from background script.');
-      if (!resp.success) throw new Error(resp.error || 'Failed to load guilds.');
-      guildsData = resp.data;
-      guildSelect.innerHTML = '<option value="">Select guild</option>';
-      guildsData.forEach(g => {
-        const opt = document.createElement('option');
-        opt.value = g.id;
-        opt.textContent = g.name;
-        opt.dataset.icon = g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=48` : '';
-        opt.dataset.guildId = g.id;
-        guildSelect.appendChild(opt);
-      });
-      // Auto-select stored guild (if not DM)
-      const session = await stateStorage.get(['currentGuildId', 'currentChannelId']);
-      if (session.currentGuildId && session.currentGuildId !== '@me') {
-        guildSelect.value = session.currentGuildId;
-        guildSelect.dispatchEvent(new Event('change'));
-      }
-    } catch (e) {
-      statusDiv.textContent = 'Error loading guilds: ' + e.message;
-      statusDiv.className = 'status-message error';
-    }
-  }
-
-  // --- Load DMs ---
-  async function loadDMs() {
-    try {
-      console.log('Loading DMs...');
-      const resp = await browser.runtime.sendMessage({ action: 'getDMs' });
-      console.log('DM response:', resp);
-      if (!resp) throw new Error('No response from background script for DMs.');
-      if (!resp.success) throw new Error(resp.error || 'Failed to load DMs.');
-      dmsData = resp.data;
-      console.log('DMs loaded:', dmsData);
-      
-      // Populate channel dropdown with DMs
-      channelSelect.innerHTML = '<option value="">Select DM</option>';
-      dmsData.forEach(d => {
-        const opt = document.createElement('option');
-        opt.value = d.id;
-        opt.textContent = d.name;
-        opt.dataset.channelId = d.id;
-        opt.dataset.icon = d.icon ? `https://cdn.discordapp.com/channel-icons/${d.id}/${d.icon}.png?size=48` : '';
-        channelSelect.appendChild(opt);
-      });
-      
-      // Auto-select stored channel
-      const session = await stateStorage.get(['currentChannelId']);
-      if (session.currentChannelId && channelSelect.querySelector(`option[value="${session.currentChannelId}"]`)) {
-        channelSelect.value = session.currentChannelId;
-        channelSelect.dispatchEvent(new Event('change'));
+      if (mode.value === 'dm') {
+        const data = await request('getDMs');
+        if (expected !== generation) return;
+        options(channel, data, data.length ? 'Choose a direct message' : 'No direct messages found');
+        if (selection?.guildId === '@me' && data.some(c => c.id === selection.channelId)) channel.value = selection.channelId;
       } else {
-        updatePreview('Direct Messages', 'Select a DM', '@me', '', '');
+        const data = await request('getGuilds');
+        if (expected !== generation) return;
+        options(guild, data, data.length ? 'Choose a server' : 'No servers found');
+        if (data.some(g => g.id === selection?.guildId)) {
+          guild.value = selection.guildId;
+          await loadChannels(expected);
+        }
       }
-    } catch (e) {
-      console.error('Error loading DMs:', e);
-      statusDiv.textContent = 'Error loading DMs: ' + e.message;
-      statusDiv.className = 'status-message error';
+    } catch (error) {
+      if (expected === generation) { connected = false; status(error.message, 'error'); }
+    } finally {
+      if (expected === generation) { busy = false; refresh(); }
     }
   }
-
-  // --- Mode switching ---
-  function switchToGuildMode() {
-    currentMode = 'guild';
-    modeSelect.value = 'guild';
-    guildField.style.display = 'block';
-    channelSelect.innerHTML = '<option value="">Select channel</option>';
-    loadGuilds();
+  function saveToken() {
+    const value = token.value.trim();
+    tokenWrite = tokenWrite.catch(() => {}).then(() => value ? storage.set({ discordToken: value }) : storage.remove('discordToken'));
+    return tokenWrite;
   }
-
-  function switchToDMMode() {
-    currentMode = 'dm';
-    modeSelect.value = 'dm';
-    guildField.style.display = 'none';
-    channelSelect.innerHTML = '<option value="">Loading DMs...</option>';
-    loadDMs();
-  }
-
-  modeSelect.addEventListener('change', () => {
-    if (modeSelect.value === 'guild') {
-      switchToGuildMode();
-    } else {
-      switchToDMMode();
-    }
+  token.addEventListener('input', () => {
+    connected = false;
+    generation++;
+    busy = false;
+    refresh();
+    saveToken().catch(() => status('The token could not be saved. Please retry.', 'error'));
   });
-
-  // --- Detect current tab and switch mode automatically ---
-  async function detectAndSwitchMode() {
+  el('connectBtn').addEventListener('click', async () => {
+    if (!token.value.trim()) { status('Enter an API token to connect.', 'error'); token.focus(); return; }
+    try { await saveToken(); connected = true; await loadSource(); }
+    catch (error) { connected = false; status(error.message, 'error'); refresh(); }
+  });
+  el('clearTokenBtn').addEventListener('click', async () => {
+    token.value = '';
+    connected = false;
+    generation++;
+    busy = false;
+    try {
+      await saveToken();
+      options(guild, [], 'Choose a server');
+      options(channel, [], 'Choose a conversation');
+      status(`Token cleared from ${namespace === 'session' ? 'this browser session' : 'browser storage'}.`, 'success');
+    } catch (error) { status(error.message, 'error'); }
+    refresh();
+  });
+  mode.addEventListener('change', () => { if (connected) loadSource(); else refresh(); });
+  guild.addEventListener('change', async () => {
+    const expected = ++generation;
+    busy = true; refresh();
+    try { await loadChannels(expected); } catch (error) { status(error.message, 'error'); }
+    finally { if (expected === generation) { busy = false; refresh(); } }
+  });
+  channel.addEventListener('change', refresh);
+  allTime.addEventListener('change', refresh);
+  allChannels.addEventListener('change', refresh);
+  el('exportForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (busy || running || !connected || !onDiscord) return;
+    const values = {
+      guildId: mode.value === 'dm' ? '@me' : guild.value,
+      channelId: channel.value,
+      format: document.querySelector('input[name="format"]:checked').value,
+      after: el('afterDate').value, before: el('beforeDate').value,
+      allChannels: allChannels.checked, allTime: allTime.checked,
+    };
+    try {
+      validateExport(values);
+      await tokenWrite;
+      const params = new URLSearchParams({ ...values,
+        guildName: mode.value === 'dm' ? 'Direct messages' : guild.selectedOptions[0].textContent,
+        channelName: allChannels.checked ? (mode.value === 'dm' ? 'All direct messages' : 'All text channels') : channel.selectedOptions[0].textContent,
+      });
+      await browser.tabs.create({ url: `${browser.runtime.getURL('export.html')}?${params}` });
+      window.close();
+    } catch (error) { status(error.message, 'error'); }
+  });
+  el('cancelBtn').addEventListener('click', async () => {
+    try { await request('cancelExport'); status('Cancellation requested.'); }
+    catch (error) { status(error.message, 'error'); }
+  });
+  browser.runtime.onMessage.addListener(message => {
+    if (message.action !== 'exportProgress') return;
+    running = !(message.complete || message.cancelled || message.error);
+    el('progressArea').hidden = !running;
+    el('progressDetail').textContent = message.detail || message.status;
+    if (!running) status(message.error || message.status, message.error ? 'error' : 'success');
+    refresh();
+  });
+  try {
+    if (namespace === 'local') el('storageHint').textContent = 'Session storage unavailable: saved locally until you clear it.';
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.url) {
-      showWarning(true);
-      return;
-    }
-    
-    console.log('Current tab URL:', tab.url);
-    
-    // Check for DM URL first
-    const dmMatch = tab.url.match(/discord\.com\/channels\/@me\/(\d+)/);
-    const guildMatch = tab.url.match(/discord\.com\/channels\/(\d+)\/(\d+)/);
-    
-    if (dmMatch) {
-      console.log('Detected DM mode, channel ID:', dmMatch[1]);
-      showWarning(false);
-      switchToDMMode();
-      // After DMs load, auto-select the current DM
-      setTimeout(() => {
-        stateStorage.get(['currentChannelId']).then((result) => {
-          if (result.currentChannelId && channelSelect.querySelector(`option[value="${result.currentChannelId}"]`)) {
-            channelSelect.value = result.currentChannelId;
-            channelSelect.dispatchEvent(new Event('change'));
-          }
-        });
-      }, 500);
-    } else if (guildMatch) {
-      console.log('Detected guild mode, guild ID:', guildMatch[1], 'channel ID:', guildMatch[2]);
-      showWarning(false);
-      switchToGuildMode();
-    } else {
-      showWarning(true);
-    }
-  }
-
-  // --- Guild change -> load channels ---
-  guildSelect.addEventListener('change', async () => {
-    const guildId = guildSelect.value;
-    const opt = guildSelect.options[guildSelect.selectedIndex];
-    const iconUrl = opt ? opt.dataset.icon : '';
-    const guildName = opt ? opt.textContent : '';
-    const guildIdAttr = opt ? opt.dataset.guildId : '';
-    if (!guildId) {
-      channelSelect.innerHTML = '<option value="">Select channel</option>';
-      updatePreview('', '', '', '', '');
-      return;
-    }
-    updatePreview(guildName, 'Loading channels...', guildIdAttr, '', iconUrl);
-
-    try {
-      const resp = await browser.runtime.sendMessage({ action: 'getChannels', guildId });
-      if (!resp) throw new Error('No response from background script.');
-      if (!resp.success) throw new Error(resp.error || 'Failed to load channels.');
-      const channels = resp.data;
-      channelSelect.innerHTML = '<option value="">Select channel</option>';
-      channels.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = c.name;
-        opt.dataset.channelId = c.id;
-        channelSelect.appendChild(opt);
-      });
-      channelSelect.disabled = allChannelsCheck.checked;
-      // Auto-select stored channel
-      const session = await stateStorage.get(['currentChannelId']);
-      if (session.currentChannelId && channelSelect.querySelector(`option[value="${session.currentChannelId}"]`)) {
-        channelSelect.value = session.currentChannelId;
-        channelSelect.dispatchEvent(new Event('change'));
-      } else {
-        updatePreview(guildName, 'Select a channel', guildIdAttr, '', iconUrl);
-      }
-    } catch (e) {
-      statusDiv.textContent = 'Error loading channels: ' + e.message;
-      statusDiv.className = 'status-message error';
-    }
-  });
-
-  // --- Channel change (for both guild and DM) ---
-  channelSelect.addEventListener('change', () => {
-    const sel = channelSelect.options[channelSelect.selectedIndex];
-    const channelName = sel ? sel.textContent : '';
-    const channelId = sel ? sel.dataset.channelId : '';
-    const iconUrl = sel ? sel.dataset.icon : '';
-
-    if (currentMode === 'guild') {
-      const gOpt = guildSelect.options[guildSelect.selectedIndex];
-      const guildName = gOpt ? gOpt.textContent : '';
-      const guildIdAttr = gOpt ? gOpt.dataset.guildId : '';
-      const guildIcon = gOpt ? gOpt.dataset.icon : '';
-      updatePreview(guildName, channelName || 'Select a channel', guildIdAttr, channelId, guildIcon);
-    } else {
-      // DM mode
-      updatePreview('Direct Messages', channelName || 'Select a DM', '@me', channelId, iconUrl);
-    }
-  });
-
-  // --- All Channels ---
-  allChannelsCheck.addEventListener('change', () => {
-    channelSelect.disabled = allChannelsCheck.checked;
-    if (allChannelsCheck.checked) {
-      channelSelect.value = '';
-      if (currentMode === 'guild') {
-        const gOpt = guildSelect.options[guildSelect.selectedIndex];
-        const guildName = gOpt ? gOpt.textContent : '';
-        const iconUrl = gOpt ? gOpt.dataset.icon : '';
-        const guildIdAttr = gOpt ? gOpt.dataset.guildId : '';
-        updatePreview(guildName, 'All text channels', guildIdAttr, '', iconUrl);
-      } else {
-        updatePreview('Direct Messages', 'All DMs', '@me', '', '');
-      }
-    } else {
-      channelSelect.dispatchEvent(new Event('change'));
-    }
-  });
-
-  // --- Storage changes for auto-update ---
-  browser.storage.onChanged.addListener((changes, namespace) => {
-    if (namespace === stateStorageNamespace && changes.currentGuildId && changes.currentChannelId) {
-      const newGuild = changes.currentGuildId.newValue;
-      const newChannel = changes.currentChannelId.newValue;
-      if (newGuild === '@me') {
-        switchToDMMode();
-        setTimeout(() => {
-          const cOpt = Array.from(channelSelect.options).find(o => o.value === newChannel);
-          if (cOpt) {
-            channelSelect.value = newChannel;
-            channelSelect.dispatchEvent(new Event('change'));
-          }
-        }, 300);
-      } else {
-        switchToGuildMode();
-        setTimeout(() => {
-          const gOpt = Array.from(guildSelect.options).find(o => o.value === newGuild);
-          if (gOpt) {
-            guildSelect.value = newGuild;
-            guildSelect.dispatchEvent(new Event('change'));
-            setTimeout(() => {
-              const cOpt = Array.from(channelSelect.options).find(o => o.value === newChannel);
-              if (cOpt) {
-                channelSelect.value = newChannel;
-                channelSelect.dispatchEvent(new Event('change'));
-              }
-            }, 300);
-          }
-        }, 300);
-      }
-    }
-  });
-
-  // --- Not Discord warning ---
-  function showWarning(show) {
-    if (show) {
-      notDiscordWarning.hidden = false;
-      document.querySelectorAll('#exportForm input, #exportForm select, #exportForm button')
-        .forEach(el => { if (el.id !== 'tokenInput') el.disabled = true; });
-      exportBtn.disabled = true;
-      guildSelect.innerHTML = '<option value="">Select guild</option>';
-      channelSelect.innerHTML = '<option value="">Select channel</option>';
-      updatePreview('Not on Discord', 'Please open a Discord page', '', '', '');
-    } else {
-      notDiscordWarning.hidden = true;
-      document.querySelectorAll('#exportForm input, #exportForm select, #exportForm button')
-        .forEach(el => { if (el.id !== 'tokenInput') el.disabled = false; });
-      exportBtn.disabled = false;
-    }
-  }
-
-  // --- Export - opens new tab ---
-  exportBtn.addEventListener('click', async (e) => {
-    e.preventDefault();
-
-    const guildId = currentMode === 'guild' ? guildSelect.value : '@me';
-    const channelId = channelSelect.value;
-    const format = formatSelect.value;
-    const after = afterDate.value;
-    const before = beforeDate.value;
-    const allChannels = allChannelsCheck.checked;
-    const allTime = allTimeCheck.checked;
-
-    if (currentMode === 'guild' && !guildId) {
-      statusDiv.textContent = 'Please select a guild.';
-      statusDiv.className = 'status-message error';
-      return;
-    }
-    if (!allChannels && !channelId) {
-      statusDiv.textContent = 'Select a channel or enable "Export all".';
-      statusDiv.className = 'status-message error';
-      return;
-    }
-
-    // Get names for the export tab
-    let guildName, channelName, iconUrl;
-    if (currentMode === 'guild') {
-      const gOpt = guildSelect.options[guildSelect.selectedIndex];
-      guildName = gOpt ? gOpt.textContent : '';
-      iconUrl = gOpt ? gOpt.dataset.icon : '';
-      const cOpt = channelSelect.options[channelSelect.selectedIndex];
-      channelName = cOpt ? cOpt.textContent : '';
-    } else {
-      guildName = 'Direct Messages';
-      const cOpt = channelSelect.options[channelSelect.selectedIndex];
-      channelName = cOpt ? cOpt.textContent : '';
-      iconUrl = cOpt ? cOpt.dataset.icon : '';
-    }
-
-    const params = new URLSearchParams({
-      guildId,
-      channelId: channelId || '',
-      format,
-      after: after || '',
-      before: before || '',
-      allChannels: allChannels ? 'true' : 'false',
-      allTime: allTime ? 'true' : 'false',
-      guildName,
-      channelName: allChannels ? (currentMode === 'guild' ? 'All text channels' : 'All DMs') : channelName,
-      iconUrl: iconUrl || ''
-    });
-
-    const url = browser.runtime.getURL('export.html') + '?' + params.toString();
-    await browser.tabs.create({ url });
-    window.close();
-  });
-
-  // --- Init ---
-  await detectAndSwitchMode();
-  await checkExportStatus();
+    selection = parseDiscordUrl(tab?.url);
+    onDiscord = !!selection;
+    el('notDiscordWarning').hidden = onDiscord;
+    if (selection?.guildId === '@me') mode.value = 'dm';
+    const saved = await storage.get('discordToken');
+    token.value = saved.discordToken || '';
+    const exportStatus = await browser.runtime.sendMessage({ action: 'getExportStatus' });
+    running = !!exportStatus?.inProgress;
+    el('progressArea').hidden = !running;
+    connected = !!token.value;
+    refresh();
+    if (connected && onDiscord) await loadSource();
+  } catch (error) { status(error.message, 'error'); }
+  refresh();
 });
-
-

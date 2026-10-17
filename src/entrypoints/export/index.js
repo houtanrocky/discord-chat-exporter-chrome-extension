@@ -1,145 +1,65 @@
-﻿import { browser } from 'wxt/browser';
+import { browser } from 'wxt/browser';
+import { FORMATS, validateExport } from '../../lib/export-options.js';
 
-// export.js - runs in the export tab
 document.addEventListener('DOMContentLoaded', async () => {
-  // Parse URL parameters
   const params = new URLSearchParams(window.location.search);
-  const guildId = params.get('guildId');
-  const channelId = params.get('channelId');
-  const format = params.get('format') || 'json';
-  const after = params.get('after') || '';
-  const before = params.get('before') || '';
-  const allChannels = params.get('allChannels') === 'true';
-  const allTime = params.get('allTime') === 'true';
-  const guildName = params.get('guildName') || 'Guild';
-  const channelName = params.get('channelName') || 'Channel';
-  const iconUrl = params.get('iconUrl') || '';
-
-  // Set preview
-  document.getElementById('guildName').textContent = guildName;
-  document.getElementById('channelName').textContent = allChannels ? 'All text channels' : channelName;
-  const avatarEl = document.getElementById('avatar');
-  if (iconUrl) {
-    const img = document.createElement('img');
-    img.src = iconUrl;
-    img.style.width = '100%';
-    img.style.height = '100%';
-    img.style.objectFit = 'cover';
-    img.onerror = () => { avatarEl.textContent = guildName.charAt(0).toUpperCase() || '?'; };
-    avatarEl.innerHTML = '';
-    avatarEl.appendChild(img);
-  } else {
-    avatarEl.textContent = guildName.charAt(0).toUpperCase() || '?';
-    avatarEl.style.background = '#5865F2';
+  const options = {
+    guildId: params.get('guildId'), channelId: params.get('channelId'),
+    format: params.get('format') || 'json', after: params.get('after') || '', before: params.get('before') || '',
+    allChannels: params.get('allChannels') === 'true', allTime: params.get('allTime') === 'true',
+  };
+  const el = id => document.getElementById(id);
+  el('guildName').textContent = params.get('guildName') || (options.guildId === '@me' ? 'Direct messages' : 'Your server');
+  el('channelName').textContent = params.get('channelName') || 'Your conversation';
+  el('avatar').textContent = options.guildId === '@me' ? '@' : '#';
+  el('formatLabel').textContent = FORMATS[options.format]?.label || 'Unknown';
+  el('rangeLabel').textContent = options.allTime || (!options.after && !options.before) ? 'All time' : `${options.after || 'Beginning'} → ${options.before || 'Today'} (UTC)`;
+  let currentTabId;
+  let accepting = false;
+  function render(message) {
+    const terminal = message.complete || message.cancelled || message.error;
+    const percent = Math.max(0, Math.min(Number(message.percent) || 0, 100));
+    el('progressFill').style.width = `${percent}%`;
+    el('progressBar').classList.toggle('indeterminate', !terminal && !percent);
+    if (terminal || percent) el('progressBar').setAttribute('aria-valuenow', String(percent));
+    else el('progressBar').removeAttribute('aria-valuenow');
+    el('statusText').textContent = message.error || message.status || 'Reading your history…';
+    el('detailText').textContent = message.detail || (message.error ? 'Check the connection in the popup, then try again.' : '');
+    el('statusText').className = message.error ? 'error' : message.complete ? 'complete' : '';
+    el('stateBadge').textContent = message.error ? 'Needs attention' : message.complete ? 'Complete' : message.cancelled ? 'Cancelled' : 'In progress';
+    if (message.messageCount != null) el('messageCount').textContent = Number(message.messageCount).toLocaleString();
+    el('cancelBtn').hidden = !!terminal;
+    el('closeBtn').hidden = !terminal;
+    el('retryBtn').hidden = !(message.error || message.cancelled);
+    if (terminal) accepting = false;
   }
-
-  // Elements
-  const progressFill = document.getElementById('progressFill');
-  const statusText = document.getElementById('statusText');
-  const detailText = document.getElementById('detailText');
-  const cancelBtn = document.getElementById('cancelBtn');
-  const closeBtn = document.getElementById('closeBtn');
-  const retryBtn = document.getElementById('retryBtn');
-
-  // State
-  let exportId = null;
-  let completed = false;
-  const currentTab = await browser.tabs.getCurrent();
-  const currentTabId = currentTab?.id;
-
-  // Start the export
   async function startExport() {
+    accepting = true;
+    el('cancelBtn').disabled = false;
+    el('messageCount').textContent = '0';
+    render({ status: 'Preparing your export…', detail: 'Connecting to your selected conversation.' });
     try {
-      const response = await browser.runtime.sendMessage({
-        action: 'startExportInTab',
-        tabId: currentTabId,
-        guildId,
-        channelId,
-        format,
-        after: after || null,
-        before: before || null,
-        allChannels,
-        allTime
-      });
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to start export');
-      }
-      // Export started - we'll receive progress messages
-    } catch (error) {
-      statusText.textContent = 'Error: ' + error.message;
-      statusText.className = 'status-text error';
-      cancelBtn.classList.add('hidden');
-      retryBtn.classList.remove('hidden');
-    }
+      validateExport(options);
+      if (currentTabId == null) throw new Error('Open this page from the extension popup.');
+      const response = await browser.runtime.sendMessage({ action: 'startExportInTab', ...options });
+      if (!response?.success) throw new Error(response?.error || 'The extension did not respond. Please retry.');
+    } catch (error) { render({ error: error.message }); }
   }
-
-  // Handle progress messages from background
-  browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.action === 'exportProgress' && message.tabId === currentTabId) {
-      const { percent, status, detail, complete, cancelled, error } = message;
-      progressFill.style.width = Math.min(percent || 0, 100) + '%';
-      statusText.textContent = status || 'Processing...';
-      if (detail) detailText.textContent = detail;
-      if (complete) {
-        completed = true;
-        statusText.className = 'status-text complete';
-        statusText.textContent = 'Export complete!';
-        detailText.textContent = 'File(s) downloaded.';
-        cancelBtn.classList.add('hidden');
-        closeBtn.classList.remove('hidden');
-        // Optionally close after a delay, but let user decide.
-      } else if (cancelled) {
-        completed = true;
-        statusText.className = 'status-text';
-        statusText.textContent = 'Export cancelled.';
-        detailText.textContent = '';
-        cancelBtn.classList.add('hidden');
-        closeBtn.classList.remove('hidden');
-        retryBtn.classList.remove('hidden');
-      } else if (error) {
-        statusText.className = 'status-text error';
-        statusText.textContent = 'Error: ' + error;
-        detailText.textContent = '';
-        cancelBtn.classList.add('hidden');
-        closeBtn.classList.remove('hidden');
-        retryBtn.classList.remove('hidden');
-      }
-      return true;
-    }
+  browser.runtime.onMessage.addListener(message => {
+    if (accepting && message.action === 'exportProgress' && message.tabId === currentTabId) render(message);
   });
-
-  // Cancel
-  cancelBtn.addEventListener('click', async () => {
-    cancelBtn.disabled = true;
-    statusText.textContent = 'Cancelling...';
-    const response = await browser.runtime.sendMessage({ action: 'cancelExport' });
-    if (!response.success) {
-      statusText.textContent = 'Failed to cancel: ' + (response.error || 'unknown');
-      cancelBtn.disabled = false;
-    }
+  el('cancelBtn').addEventListener('click', async () => {
+    el('cancelBtn').disabled = true;
+    try {
+      const response = await browser.runtime.sendMessage({ action: 'cancelExport', tabId: currentTabId });
+      if (!response?.success) throw new Error(response?.error || 'Cancellation failed.');
+      if (accepting) el('statusText').textContent = 'Cancelling…';
+    } catch (error) { el('detailText').textContent = error.message; el('cancelBtn').disabled = false; }
   });
-
-  // Retry
-  retryBtn.addEventListener('click', () => {
-    retryBtn.classList.add('hidden');
-    closeBtn.classList.add('hidden');
-    cancelBtn.classList.remove('hidden');
-    cancelBtn.disabled = false;
-    progressFill.style.width = '0%';
-    statusText.textContent = 'Starting...';
-    statusText.className = 'status-text';
-    detailText.textContent = '';
-    startExport();
-  });
-
-  // Close
-  closeBtn.addEventListener('click', () => {
-    window.close();
-  });
-
-  // Start
-  await startExport();
+  el('retryBtn').addEventListener('click', startExport);
+  el('closeBtn').addEventListener('click', () => window.close());
+  try {
+    currentTabId = (await browser.tabs.getCurrent())?.id;
+    await startExport();
+  } catch (error) { render({ error: error.message }); }
 });
-
-
-

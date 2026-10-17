@@ -1,0 +1,1 @@
+Export Discord channels and DMs to JSON, CSV, or plain text. Date ranges, bulk channel export, live progress. Local-only.

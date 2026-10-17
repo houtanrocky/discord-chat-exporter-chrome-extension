@@ -1,3 +1,5 @@
+import { markdownToPlainText } from './markdownParser.js';
+
 export class User {
   constructor(data) {
     this.id = data.id;
@@ -56,7 +58,7 @@ export function buildJson(messages, channel, guild) {
         displayName: m.author.displayName,
         bot: m.author.bot
       },
-      content: markdownToPlainText(m.content),
+      content: m.content,
       timestamp: m.timestamp.toISOString(),
       editedTimestamp: m.editedTimestamp ? m.editedTimestamp.toISOString() : null,
       attachments: m.attachments,
@@ -73,7 +75,7 @@ export function buildCsv(messages) {
   const headers = ['MessageID', 'AuthorID', 'AuthorName', 'Timestamp', 'Content', 'AttachmentURLs', 'Reactions'];
   let rows = [headers.join(',')];
   for (const m of messages) {
-    const content = escapeCsv(markdownToPlainText(m.content));
+    const content = markdownToPlainText(m.content);
     const attachments = m.attachments.map(a => a.url).join(';');
     const reactions = m.reactions.map(r => `${r.emoji}:${r.count}`).join(';');
     rows.push([
@@ -90,7 +92,8 @@ export function buildCsv(messages) {
 }
 export function escapeCsv(str) {
   if (str == null) return '';
-  const s = String(str).replace(/"/g, '""');
+  const value = String(str);
+  const s = (/^\s*[=+@-]/.test(value) ? `'${value}` : value).replace(/"/g, '""');
   return `"${s}"`;
 }
 

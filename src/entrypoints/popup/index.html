@@ -5,123 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="./style.css" />
     <title>Discord Chat Exporter</title>
+    <link rel="icon" href="/icons/icon32.png" />
   </head>
   <body>
     <main id="app">
       <header class="app-header">
-        <div class="brand-mark" aria-hidden="true">D</div>
-        <div>
-          <p class="eyebrow">Discord Chat Exporter</p>
-          <h1>Save a conversation</h1>
-        </div>
-        <span class="privacy-badge">Local only</span>
+        <img class="brand-mark" src="/icons/icon48.png" width="36" height="36" alt="" />
+        <div><p class="eyebrow">Discord Chat Exporter</p><h1>Keep the conversation.</h1></div>
+        <span class="privacy-badge"><span aria-hidden="true">●</span> On your device</span>
       </header>
-
-      <div id="notDiscordWarning" class="alert alert-warning" role="alert" hidden>
-        <span class="alert-icon" aria-hidden="true">!</span>
-        <p>Open a Discord channel in the active tab to choose a conversation.</p>
-      </div>
-
-      <section class="preview-card" id="previewCard" aria-label="Current selection">
-        <div class="preview-avatar" id="previewAvatar" aria-hidden="true">?</div>
-        <div class="preview-info">
-          <span class="preview-kicker">Ready to export</span>
-          <strong class="preview-guild" id="previewGuildName">Select a server</strong>
-          <span class="preview-channel" id="previewChannelName">Select a channel</span>
-        </div>
+      <div id="notDiscordWarning" class="alert" role="alert" hidden>Open a channel at discord.com, then reopen this popup.</div>
+      <section class="preview-card" aria-label="Selected conversation">
+        <div class="preview-avatar" id="previewAvatar" aria-hidden="true">#</div>
+        <div class="preview-info"><span class="preview-kicker">YOUR CONVERSATION</span><strong id="previewGuildName">Connect to get started</strong><span id="previewChannelName">Choose the history you want to keep</span></div>
+        <span class="selection-dot" aria-hidden="true"></span>
       </section>
-
       <form id="exportForm" class="export-form">
         <section class="form-section">
-          <div class="section-heading">
-            <div>
-              <p class="section-kicker">Connection</p>
-              <h2>Choose where to export from</h2>
-            </div>
-            <span class="step-badge">1</span>
-          </div>
-
-          <div class="field">
-            <label for="modeSelect">Source</label>
-            <select id="modeSelect">
-              <option value="guild">Server channels</option>
-              <option value="dm">Direct messages</option>
-            </select>
-          </div>
-
-          <div class="field" id="guildField">
-            <label for="guildSelect">Server</label>
-            <select id="guildSelect"></select>
-          </div>
-
-          <div class="field" id="channelField">
-            <label for="channelSelect">Channel</label>
-            <select id="channelSelect"></select>
-          </div>
-
-          <div class="field token-field">
-            <div class="label-row">
-              <label for="tokenInput">Discord API token</label>
-              <button type="button" class="text-button" id="clearTokenBtn">Clear</button>
-            </div>
-            <input type="password" id="tokenInput" autocomplete="off" placeholder="Paste a token to continue" />
-            <small>Stored in this browser only; clear it when you are done. This extension never reads cookies or page storage.</small>
-          </div>
+          <div class="section-heading"><h2><span class="step-badge">01</span> Connect & choose</h2><span id="connectionStatus" class="connection-status">Not connected</span></div>
+          <label for="tokenInput">Discord API token</label>
+          <div class="token-row"><input type="password" id="tokenInput" autocomplete="off" spellcheck="false" placeholder="Paste your token" aria-describedby="tokenHelp" /><button type="button" id="connectBtn" class="connect-btn">Connect</button><button type="button" id="clearTokenBtn" class="text-button">Clear</button></div>
+          <p class="field-help" id="tokenHelp">Used only to connect to Discord. <span id="storageHint">Kept for this browser session.</span></p>
+          <div class="source-row"><div class="field"><label for="modeSelect">Source</label><select id="modeSelect"><option value="guild">Server channels</option><option value="dm">Direct messages</option></select></div><div class="field" id="guildField"><label for="guildSelect">Server</label><select id="guildSelect"><option value="">Choose a server</option></select></div></div>
+          <div class="field"><label for="channelSelect">Conversation</label><select id="channelSelect"><option value="">Choose a channel</option></select></div>
         </section>
-
         <section class="form-section">
-          <div class="section-heading">
-            <div>
-              <p class="section-kicker">Export settings</p>
-              <h2>Shape the download</h2>
-            </div>
-            <span class="step-badge">2</span>
-          </div>
-
-          <div class="date-row">
-            <div class="field flex-1">
-              <label for="afterDate">From</label>
-              <input type="date" id="afterDate" />
-            </div>
-            <div class="field flex-1">
-              <label for="beforeDate">To</label>
-              <input type="date" id="beforeDate" />
-            </div>
-          </div>
-
-          <label class="check-row">
-            <input type="checkbox" id="allTime" />
-            <span><strong>All time</strong><small>Automatically find the full history</small></span>
-          </label>
-          <label class="check-row">
-            <input type="checkbox" id="allChannels" />
-            <span><strong>Every channel</strong><small>Export all text channels in this source</small></span>
-          </label>
-
-          <div class="field">
-            <label for="formatSelect">File format</label>
-            <select id="formatSelect">
-              <option value="json">JSON — best for analysis</option>
-              <option value="csv">CSV — spreadsheets</option>
-              <option value="plaintext">Plain text — easy to read</option>
-            </select>
-          </div>
+          <div class="section-heading"><h2><span class="step-badge">02</span> Make it yours</h2><span class="field-help">Dates use UTC</span></div>
+          <fieldset class="format-options"><legend>File format</legend>
+            <label class="format-choice"><input type="radio" name="format" value="json" checked /><span><strong>JSON</strong><small>Structured data</small></span></label>
+            <label class="format-choice"><input type="radio" name="format" value="csv" /><span><strong>CSV</strong><small>Spreadsheets</small></span></label>
+            <label class="format-choice"><input type="radio" name="format" value="plaintext" /><span><strong>TXT</strong><small>Easy reading</small></span></label>
+          </fieldset>
+          <div class="date-row" id="dateRow" hidden><div class="field"><label for="afterDate">From</label><input type="date" id="afterDate" disabled /></div><div class="field"><label for="beforeDate">Through</label><input type="date" id="beforeDate" disabled /></div></div>
+          <div class="checks"><label class="check-row"><input type="checkbox" id="allTime" checked /><span>All time</span></label><label class="check-row"><input type="checkbox" id="allChannels" /><span>Every channel in this source</span></label></div>
         </section>
-
-        <button type="submit" class="export-btn" id="exportBtn">
-          <span>Start export</span><span aria-hidden="true">→</span>
-        </button>
+        <button type="submit" class="export-btn" id="exportBtn" disabled><span>Export conversation</span><span aria-hidden="true">↗</span></button>
       </form>
-
-      <section id="progressArea" class="progress-area" hidden aria-live="polite">
-        <div class="progress-heading"><strong id="progressStatus">Preparing export</strong><span id="progressPercent">0%</span></div>
-        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
-        <p class="progress-detail" id="progressDetail">Your export will download in a new tab.</p>
-        <button type="button" id="cancelBtn" class="cancel-btn" hidden>Cancel export</button>
-      </section>
-
+      <section id="progressArea" class="progress-area" hidden aria-live="polite"><strong>An export is running</strong><p id="progressDetail">Follow its progress in the export tab.</p><button type="button" id="cancelBtn" class="text-button">Cancel export</button></section>
       <div id="status" class="status-message" role="status" aria-live="polite"></div>
-      <footer>Discord Chat Exporter <span>v1.4.0</span></footer>
+      <footer><span>No analytics. No export server.</span><a href="https://houtanrocky.github.io/discord-chat-exporter-chrome-extension/support.html" target="_blank" rel="noreferrer">Help & support ↗</a><span>v1.4.0</span></footer>
     </main>
     <script type="module" src="./index.js"></script>
   </body>

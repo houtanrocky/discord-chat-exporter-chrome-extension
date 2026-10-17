@@ -1,0 +1,37 @@
+Keep a useful copy of your conversations with Discord Chat Exporter. Save channel history and direct messages as JSON, CSV, or a plain text transcript, with processing on your own device.
+
+CHOOSE A FILE THAT FITS YOUR WORK
+• JSON: structured messages with original text, authors, timestamps, attachment links, embeds, reactions, mentions, and reply references.
+• CSV: a spreadsheet-friendly table for reviewing messages, authors, dates, attachment URLs, and reaction counts.
+• TXT: a readable conversation transcript with author names, timestamps, and attachment links.
+
+CHOOSE THE HISTORY YOU NEED
+Export one conversation, or save separate files for every text and announcement channel in the selected server. Individual and group direct messages are supported. Keep all available history or choose a date range; the end date includes the entire selected UTC day.
+
+FOLLOW THE EXPORT
+A dedicated workspace shows progress and the number of messages read. Cancel an export when you need to, and retry after an error. Files already saved remain on your device.
+
+DIRECT CONNECTION, LOCAL PROCESSING
+Your API token is an explicit input. The extension never extracts cookies or page credentials. It connects directly to Discord, formats the selected messages in your browser, and passes the files to your download manager. There is no developer-operated export server, analytics, or advertising.
+
+The token is stored in browser session storage when available. If session storage is unavailable, local extension storage is used until you clear it; the popup explains this fallback. Use Clear to remove the token when you finish.
+
+GET STARTED
+1. Open a channel or direct message at discord.com in your browser.
+2. Open the extension, enter your authorized API token, and select Connect.
+3. Choose your source, file format, and dates, then select Export conversation.
+4. Follow progress in the export tab and save your files.
+
+PLEASE KNOW
+• A valid API token and access to the selected conversations are required. Bot credentials may not support account-specific endpoints.
+• Attachment URLs are included; attachment files are not downloaded and their links may expire.
+• Threads, forum posts, voice channels, and deleted messages are not included.
+• Bulk export stops on a permission or API error. Already saved files are kept.
+• Large histories depend on browser memory and API availability. Retries start from the beginning.
+• This is an independent project, not affiliated with or endorsed by Discord. Export only content you are authorized to access and follow the service’s terms and community rules.
+
+Setup and support:
+https://houtanrocky.github.io/discord-chat-exporter-chrome-extension/support.html
+
+Privacy policy:
+https://houtanrocky.github.io/discord-chat-exporter-chrome-extension/privacy.html

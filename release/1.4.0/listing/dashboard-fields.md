@@ -25,7 +25,7 @@ Permission justifications:
 - storage: Store the API token explicitly provided by the user and selected conversation context. Session storage is preferred, with a disclosed local-storage fallback.
 - downloads: Save the conversation export files requested by the user.
 - activeTab: Identify the active Discord conversation when the user opens the extension.
-- tabs: Read Discord tab navigation, detect the selected channel, and open the export progress workspace.
+- tabs — paste into the Chrome Web Store Privacy practices permission justification field: “The tabs permission lets the extension read the active tab URL to detect the Discord channel the user is viewing, monitor URL changes to keep that selection current, and open the export workspace in a new tab when the user starts an export. It only uses matching Discord channel URLs; it does not collect browsing history or read page contents.”
 - https://discord.com/*: Read the current Discord channel URL and make direct authenticated API requests for server/channel lists and messages.
 
 Remote code:

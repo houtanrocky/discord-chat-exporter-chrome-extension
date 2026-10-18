@@ -58,10 +58,12 @@ test('a missing token can connect immediately and can always be cleared', async 
   expect(await page.evaluate(() => window.__harness.store.discordToken)).toBeUndefined();
 });
 test('token help explains the supported setup boundary without exposing credentials', async ({ page }, info) => {
+  await page.setViewportSize({ width: 440, height: 600 });
   await openPopup(page, info, { noToken: true });
   const guide = page.locator('#tokenGuide');
   await expect(guide.locator('summary')).toHaveText('Where do I get a token?');
   await guide.locator('summary').click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => document.documentElement.clientWidth));
   await expect(guide).toContainText('Discord does not provide a supported way');
   await expect(guide).toContainText('cannot use this version yet');
   await expect(guide.locator('a')).toHaveAttribute('href', /support\.html#about-the-api-token/);

@@ -1,6 +1,6 @@
 {
   "version": "1.4.0",
-  "capturedAt": "2026-10-17T23:56:07.100Z",
+  "capturedAt": "2026-10-18T00:00:58.439Z",
   "browserVersion": "145.0.7632.6",
   "interface": "Actual .output/chrome-mv3 production pages loaded as a native Chromium extension",
   "data": "Deterministic synthetic API fixture from test/fixtures.mjs. No live account, credentials, or private messages.",
@@ -10,17 +10,17 @@
     {
       "path": "release/1.4.0/source/popup-server.png",
       "source": "chrome-extension://<unpacked-extension-id>/popup.html",
-      "sha256": "27f9d76c7473c3d8b995713754c82c9be7b1e12ab0f955ecc96545ecc97aa7fa"
+      "sha256": "b652fddbbb48f6679ef7481d89e78f280230d885ae86a2110e5c133a9d1f009b"
     },
     {
       "path": "release/1.4.0/source/popup-formats-dates.png",
       "source": "chrome-extension://<unpacked-extension-id>/popup.html",
-      "sha256": "0d148d162ef085504cee62d72f1335bc3121fbaefc2622c7ec1c0a4f49c252c1"
+      "sha256": "49de95914d1d586d4c87f91fb64ec7910832c160d443ea96802340e855f5f157"
     },
     {
       "path": "release/1.4.0/screenshots/03-live-progress.png",
       "source": "chrome-extension://<unpacked-extension-id>/export.html?guildId=100000000000000001&channelId=200000000000000001&guildName=Design+Collective&channelName=project-notes&format=json&allTime=true",
-      "sha256": "dbada2676479d479635d6328a302b9c553c0495d12121e0c4e6cc850a0a8877b"
+      "sha256": "9e34b6f80162cc9d5b68ee8dd72336d52aedc321d029cdf6cd7dfbc841cfe914"
     },
     {
       "path": "release/1.4.0/screenshots/04-export-complete.png",
@@ -30,22 +30,22 @@
     {
       "path": "release/1.4.0/source/popup-direct-messages.png",
       "source": "chrome-extension://<unpacked-extension-id>/popup.html",
-      "sha256": "de1f6775da16e9c6ebdcbc717d95f362ecbf0fdbc557a8390b43824055bc9a3c"
+      "sha256": "217552265c8c51ce431c15d6c3fa656931acc44093f8ae54360a61098e652708"
     },
     {
       "path": "release/1.4.0/screenshots/01-choose-conversation.png",
       "source": "about:blank",
-      "sha256": "220d9dedf16baa8ac911e1434907861aaba687f8743ac8835fbc8b46ac2aafb7"
+      "sha256": "d4afb3cc62be308f875e25687fd99f16eaebd868f1d727570fb40bebf5ce9675"
     },
     {
       "path": "release/1.4.0/screenshots/02-formats-and-dates.png",
       "source": "about:blank",
-      "sha256": "912772d760dbb8ad8b37f9e4d7270643fe81a98ea69516780466005d38b01530"
+      "sha256": "f7e75a9d7b176ecf9cd8b83b62a8c8a7390c6cf55d1b318de5fb190cf0773576"
     },
     {
       "path": "release/1.4.0/screenshots/05-direct-messages.png",
       "source": "about:blank",
-      "sha256": "d1cb2f6cf3bd8a2feb2ad2df43cf8a3fb5c327439315646e0ab8eada3dfd08b4"
+      "sha256": "7c2967fe8b85a243d6a0b30aade28a04eea51e90152f69a3c28b1950323749ff"
     },
     {
       "path": "release/1.4.0/promo/marquee-1400x560.png",

@@ -26,7 +26,7 @@ h1 { font-size: clamp(36px, 4vw, 50px); font-weight: 550; line-height: 1.12; let
 .conversation { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .conversation strong { font-size: 14px; overflow-wrap: anywhere; }
 .conversation span { color: #536c75; font-size: 12px; overflow-wrap: anywhere; }
-.export-details { display: grid; grid-template-columns: .8fr 1.4fr .8fr; gap: 12px; margin: 25px 0; }
+.export-details { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.4fr) minmax(0, .8fr); gap: 12px; margin: 25px 0; }
 dt { color: #526b73; font-size: 10px; margin-bottom: 7px; }
 dd { margin: 0; font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
 .progress-bar-bg { height: 6px; background: #e3ece6; border-radius: 20px; overflow: hidden; }
